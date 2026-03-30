@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交易日志</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#2c2c2a;font-size:15px}
+.container{max-width:780px;margin:0 auto;padding:16px}
+h1{font-size:20px;font-weight:500;margin-bottom:16px;color:#2c2c2a}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;background:#fff;border:0.5px solid #d3d1c7;border-radius:10px;padding:4px}
+.tab{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:#888780;font-size:14px;cursor:pointer;transition:all 0.15s}
+.tab.active{background:#f1efe8;color:#2c2c2a;font-weight:500}
+.section{background:#fff;border:0.5px solid #d3d1c7;border-radius:12px;padding:16px;margin-bottom:12px}
+.section-title{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px}
+.field-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.field-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
+@media(max-width:600px){.field-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:#888780}
+.field input,.field select,.field textarea{font-size:14px;padding:8px 10px;border-radius:8px;border:0.5px solid #d3d1c7;background:#f5f5f0;color:#2c2c2a;width:100%;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#378add;background:#fff}
+.field textarea{resize:vertical;min-height:70px}
+.divider{height:0.5px;background:#d3d1c7;margin:12px 0}
+.calc-preview{margin-top:10px;padding:10px;background:#f5f5f0;border-radius:8px;font-size:13px;color:#888780}
+.checklist{display:flex;flex-direction:column;gap:8px}
+.check-item{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}
+.check-item input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:#378add}
+.check-count{margin-top:8px;font-size:12px;color:#888780}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.btn{padding:9px 20px;border-radius:8px;border:0.5px solid #d3d1c7;background:transparent;color:#2c2c2a;font-size:14px;cursor:pointer}
+.btn:hover{background:#f1efe8}
+.btn-primary{background:#378add;color:#fff;border-color:#185fa5;font-weight:500}
+.btn-primary:hover{background:#185fa5}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:#fff;border:0.5px solid #d3d1c7;border-radius:10px;padding:12px 14px}
+.stat-label{font-size:11px;color:#888780;margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:500}
+.stat-value.green{color:#27500a}
+.stat-value.red{color:#791f1f}
+.trades-table{width:100%;border-collapse:collapse;font-size:13px}
+.trades-table th{text-align:left;padding:8px 10px;border-bottom:0.5px solid #d3d1c7;color:#888780;font-weight:500;font-size:11px;text-transform:uppercase}
+.trades-table td{padding:9px 10px;border-bottom:0.5px solid #f1efe8;vertical-align:top}
+.trades-table tr:last-child td{border-bottom:none}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:500}
+.tag-long{background:#e6f1fb;color:#0c447c}
+.tag-short{background:#fcebeb;color:#791f1f}
+.tag-win{background:#eaf3de;color:#27500a}
+.tag-loss{background:#fcebeb;color:#791f1f}
+.empty{text-align:center;padding:2.5rem;color:#b4b2a9;font-size:14px}
+.review-card{background:#fff;border:0.5px solid #d3d1c7;border-radius:12px;padding:16px;margin-bottom:10px}
+.review-card .week{font-weight:500;font-size:15px}
+.review-section{margin-top:10px}
+.review-section .rlabel{font-size:11px;color:#888780;margin-bottom:3px}
+.review-section .rtext{font-size:13px;line-height:1.6}
+.notice{background:#e6f1fb;border:0.5px solid #85b7eb;border-radius:8px;padding:10px 14px;font-size:13px;color:#0c447c;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>交易日志</h1>
+  <div class="notice">数据保存在本地浏览器，换设备后数据不同步。建议定期截图或导出备份。</div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('record')">记录交易</button>
+    <button class="tab" onclick="showTab('history')">历史记录</button>
+    <button class="tab" onclick="showTab('review')">每周复盘</button>
+  </div>
+
+  <!-- 记录交易 -->
+  <div id="tab-record">
+    <div class="section">
+      <div class="section-title">开仓信息</div>
+      <div class="field-grid">
+        <div class="field"><label>交易品种</label><input type="text" id="symbol" placeholder="BTC/USDT"></div>
+        <div class="field"><label>方向</label>
+          <select id="direction"><option value="long">做多</option><option value="short">做空</option></select>
+        </div>
+        <div class="field"><label>开仓时间</label><input type="datetime-local" id="open-time"></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>入场价格</label><input type="number" id="entry" placeholder="68000" oninput="updateCalc()"></div>
+        <div class="field"><label>止损价格</label><input type="number" id="sl" placeholder="67500" oninput="updateCalc()"></div>
+        <div class="field"><label>止盈价格</label><input type="number" id="tp" placeholder="72000" oninput="updateCalc()"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="field-grid">
+        <div class="field"><label>账户总资金 (USDT)</label><input type="number" id="capital" placeholder="100"></div>
+        <div class="field"><label>仓位大小 (USDT)</label><input type="number" id="position" placeholder="270" oninput="updateCalc()"></div>
+        <div class="field"><label>杠杆倍数</label><input type="number" id="leverage" placeholder="3"></div>
+      </div>
+      <div class="calc-preview" id="calc-preview">填入入场价和止损价后自动计算盈亏比</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">入场前检查清单</div>
+      <div class="checklist">
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>日线趋势方向明确</span></label>
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>日线、4小时、15分钟 EMA21 方向一致</span></label>
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>在支撑位 / 阻力位附近入场</span></label>
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>K线收盘确认（长下影线 / 长上影线）</span></label>
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>MACD 有背离或动能支撑</span></label>
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>RSI 处于超卖 / 超买区间</span></label>
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>成交量配合放大</span></label>
+        <label class="check-item"><input type="checkbox" onchange="updateChecks()"><span>单次最大亏损不超过总资金 2%</span></label>
+      </div>
+      <div class="check-count" id="check-count">已勾选 0 / 8 项</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">入场理由</div>
+      <div class="field"><textarea id="reason" placeholder="简述本次入场依据：趋势方向、入场信号、指标确认..."></textarea></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">平仓信息（开仓后填写）</div>
+      <div class="field-grid">
+        <div class="field"><label>平仓价格</label><input type="number" id="exit" placeholder="72000"></div>
+        <div class="field"><label>平仓时间</label><input type="datetime-local" id="close-time"></div>
+        <div class="field"><label>离场原因</label>
+          <select id="exit-reason">
+            <option value="">请选择</option>
+            <option value="tp">止盈触发</option>
+            <option value="sl">止损触发</option>
+            <option value="manual-win">主动止盈</option>
+            <option value="manual-loss">主动止损</option>
+            <option value="liquidation">强制平仓</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px"><label>情绪记录</label><textarea id="emotion" placeholder="持仓过程中的情绪变化：有没有慌、有没有想提前跑、有没有违反规则..."></textarea></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="clearForm()">清空</button>
+      <button class="btn btn-primary" onclick="saveTrade()">保存记录</button>
+    </div>
+  </div>
+
+  <!-- 历史记录 -->
+  <div id="tab-history" style="display:none">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">总交易次数</div><div class="stat-value" id="stat-total">0</div></div>
+      <div class="stat-card"><div class="stat-label">胜率</div><div class="stat-value" id="stat-wr">—</div></div>
+      <div class="stat-card"><div class="stat-label">总盈亏</div><div class="stat-value" id="stat-pnl">0</div></div>
+      <div class="stat-card"><div class="stat-label">规则执行率</div><div class="stat-value" id="stat-rule">—</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">交易记录</div>
+      <div id="trades-container"><div class="empty">还没有交易记录</div></div>
+    </div>
+  </div>
+
+  <!-- 每周复盘 -->
+  <div id="tab-review" style="display:none">
+    <div class="section">
+      <div class="section-title">新建复盘</div>
+      <div class="field-grid-2">
+        <div class="field"><label>复盘周期</label><input type="week" id="review-week"></div>
+        <div class="field"><label>本周盈亏 (USDT)</label><input type="number" id="review-pnl" placeholder="0"></div>
+      </div>
+      <div class="field" style="margin-bottom:10px"><label>本周赚在哪里</label><textarea id="review-win" placeholder="哪几笔单做对了，为什么做对..."></textarea></div>
+      <div class="field" style="margin-bottom:10px"><label>本周亏在哪里</label><textarea id="review-loss" placeholder="哪几笔单做错了，犯了什么规则..."></textarea></div>
+      <div class="field" style="margin-bottom:10px"><label>有没有违反规则</label><textarea id="review-rule" placeholder="描述具体违规操作和原因..."></textarea></div>
+      <div class="field" style="margin-bottom:12px"><label>下周改进计划</label><textarea id="review-plan" placeholder="下周需要注意什么，要改变什么习惯..."></textarea></div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="saveReview()">保存复盘</button></div>
+    </div>
+    <div id="reviews-list"></div>
+  </div>
+</div>
+
+<script>
+let trades = JSON.parse(localStorage.getItem('tj_trades')||'[]');
+let reviews = JSON.parse(localStorage.getItem('tj_reviews')||'[]');
+
+function showTab(t){
+  ['record','history','review'].forEach(id=>{
+    document.getElementById('tab-'+id).style.display=id===t?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach((btn,i)=>{
+    btn.classList.toggle('active',['record','history','review'][i]===t);
+  });
+  if(t==='history') renderHistory();
+  if(t==='review') renderReviews();
+}
+
+function updateCalc(){
+  const entry=parseFloat(document.getElementById('entry').value);
+  const sl=parseFloat(document.getElementById('sl').value);
+  const tp=parseFloat(document.getElementById('tp').value);
+  const pos=parseFloat(document.getElementById('position').value);
+  if(!entry||!sl){document.getElementById('calc-preview').textContent='填入入场价和止损价后自动计算盈亏比';return;}
+  const slDist=(Math.abs(entry-sl)/entry*100).toFixed(2);
+  let txt=`止损距离 ${slDist}%`;
+  if(tp){const tpDist=(Math.abs(tp-entry)/entry*100).toFixed(2);const rr=(tpDist/slDist).toFixed(1);txt+=`　止盈距离 ${tpDist}%　盈亏比 1:${rr}`;}
+  if(pos){const maxLoss=(pos*slDist/100).toFixed(2);txt+=`　最大亏损 ${maxLoss} USDT`;}
+  document.getElementById('calc-preview').textContent=txt;
+}
+
+function updateChecks(){
+  const n=document.querySelectorAll('.checklist input:checked').length;
+  document.getElementById('check-count').textContent=`已勾选 ${n} / 8 项`;
+}
+
+function saveTrade(){
+  const entry=parseFloat(document.getElementById('entry').value);
+  if(!entry){alert('请填写入场价格');return;}
+  const exit=parseFloat(document.getElementById('exit').value)||null;
+  const pos=parseFloat(document.getElementById('position').value)||null;
+  const dir=document.getElementById('direction').value;
+  let pnl=null;
+  if(exit&&pos){pnl=parseFloat(((exit-entry)/entry*(dir==='long'?1:-1)*pos).toFixed(2));}
+  const checks=document.querySelectorAll('.checklist input:checked').length;
+  const trade={
+    id:Date.now(),
+    symbol:document.getElementById('symbol').value||'BTC/USDT',
+    direction:dir,
+    openTime:document.getElementById('open-time').value,
+    entry,
+    sl:parseFloat(document.getElementById('sl').value)||null,
+    tp:parseFloat(document.getElementById('tp').value)||null,
+    capital:parseFloat(document.getElementById('capital').value)||null,
+    position:pos,
+    leverage:parseFloat(document.getElementById('leverage').value)||null,
+    exit,
+    closeTime:document.getElementById('close-time').value,
+    exitReason:document.getElementById('exit-reason').value,
+    reason:document.getElementById('reason').value,
+    emotion:document.getElementById('emotion').value,
+    pnl,checks
+  };
+  trades.unshift(trade);
+  localStorage.setItem('tj_trades',JSON.stringify(trades));
+  clearForm();
+  alert('记录已保存');
+}
+
+function clearForm(){
+  ['symbol','entry','sl','tp','capital','position','leverage','exit','reason','emotion'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('direction').value='long';
+  document.getElementById('exit-reason').value='';
+  document.getElementById('open-time').value='';
+  document.getElementById('close-time').value='';
+  document.querySelectorAll('.checklist input').forEach(c=>c.checked=false);
+  document.getElementById('check-count').textContent='已勾选 0 / 8 项';
+  document.getElementById('calc-preview').textContent='填入入场价和止损价后自动计算盈亏比';
+}
+
+function renderHistory(){
+  const closed=trades.filter(t=>t.pnl!==null);
+  const wins=closed.filter(t=>t.pnl>0).length;
+  const totalPnl=closed.reduce((s,t)=>s+t.pnl,0);
+  document.getElementById('stat-total').textContent=trades.length;
+  document.getElementById('stat-wr').textContent=closed.length?Math.round(wins/closed.length*100)+'%':'—';
+  const pel=document.getElementById('stat-pnl');
+  pel.textContent=totalPnl.toFixed(2);
+  pel.className='stat-value'+(totalPnl>0?' green':totalPnl<0?' red':'');
+  document.getElementById('stat-rule').textContent=trades.length?Math.round(trades.reduce((s,t)=>s+t.checks,0)/trades.length*100/8)+'%':'—';
+  const container=document.getElementById('trades-container');
+  if(!trades.length){container.innerHTML='<div class="empty">还没有交易记录</div>';return;}
+  const exitMap={tp:'止盈',sl:'止损','manual-win':'主动止盈','manual-loss':'主动止损',liquidation:'强平'};
+  let html='<div style="overflow-x:auto"><table class="trades-table"><thead><tr><th>品种</th><th>方向</th><th>入场</th><th>止损</th><th>止盈</th><th>盈亏</th><th>清单</th><th>离场</th></tr></thead><tbody>';
+  trades.forEach(t=>{
+    const dir=t.direction==='long'?'<span class="tag tag-long">多</span>':'<span class="tag tag-short">空</span>';
+    const pnl=t.pnl!==null?`<span class="tag ${t.pnl>=0?'tag-win':'tag-loss'}">${t.pnl>=0?'+':''}${t.pnl.toFixed(2)}</span>`:'—';
+    html+=`<tr><td>${t.symbol}</td><td>${dir}</td><td>${t.entry||'—'}</td><td>${t.sl||'—'}</td><td>${t.tp||'—'}</td><td>${pnl}</td><td>${t.checks}/8</td><td>${exitMap[t.exitReason]||'—'}</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  container.innerHTML=html;
+}
+
+function saveReview(){
+  const r={
+    id:Date.now(),
+    week:document.getElementById('review-week').value,
+    pnl:parseFloat(document.getElementById('review-pnl').value)||0,
+    win:document.getElementById('review-win').value,
+    loss:document.getElementById('review-loss').value,
+    rule:document.getElementById('review-rule').value,
+    plan:document.getElementById('review-plan').value,
+  };
+  reviews.unshift(r);
+  localStorage.setItem('tj_reviews',JSON.stringify(reviews));
+  ['review-week','review-pnl','review-win','review-loss','review-rule','review-plan'].forEach(id=>document.getElementById(id).value='');
+  renderReviews();
+  alert('复盘已保存');
+}
+
+function renderReviews(){
+  const el=document.getElementById('reviews-list');
+  if(!reviews.length){el.innerHTML='';return;}
+  el.innerHTML=reviews.map(r=>`
+    <div class="review-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="week">${r.week||'未填写周期'}</span>
+        <span class="tag ${r.pnl>=0?'tag-win':'tag-loss'}">${r.pnl>=0?'+':''}${r.pnl.toFixed(2)} USDT</span>
+      </div>
+      ${r.win?`<div class="review-section"><div class="rlabel">赚在哪里</div><div class="rtext">${r.win}</div></div>`:''}
+      ${r.loss?`<div class="review-section"><div class="rlabel">亏在哪里</div><div class="rtext">${r.loss}</div></div>`:''}
+      ${r.rule?`<div class="review-section"><div class="rlabel">违规记录</div><div class="rtext">${r.rule}</div></div>`:''}
+      ${r.plan?`<div class="review-section"><div class="rlabel">下周计划</div><div class="rtext">${r.plan}</div></div>`:''}
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
